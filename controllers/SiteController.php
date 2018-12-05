@@ -2,13 +2,15 @@
 
 namespace app\controllers;
 
+use app\services\CalculateButton;
+use app\services\Calculator;
+use app\services\ClearButton;
+use app\services\History;
+use app\services\OperandButton;
 use Yii;
 use yii\filters\AccessControl;
 use yii\web\Controller;
-use yii\web\Response;
 use yii\filters\VerbFilter;
-use app\models\LoginForm;
-use app\models\ContactForm;
 
 class SiteController extends Controller
 {
@@ -61,68 +63,48 @@ class SiteController extends Controller
      */
     public function actionIndex()
     {
-        return $this->render('index');
-    }
+        $calculator = $this->buildCalculator();
 
-    /**
-     * Login action.
-     *
-     * @return Response|string
-     */
-    public function actionLogin()
-    {
-        if (!Yii::$app->user->isGuest) {
-            return $this->goHome();
+        if ($code = Yii::$app->request->get('code')) {
+            $calculator->getButton($code)->click();
         }
 
-        $model = new LoginForm();
-        if ($model->load(Yii::$app->request->post()) && $model->login()) {
-            return $this->goBack();
-        }
-
-        $model->password = '';
-        return $this->render('login', [
-            'model' => $model,
+        return $this->render('index', [
+            'calculator' => $calculator,
         ]);
     }
 
     /**
-     * Logout action.
+     * Calculator builder
      *
-     * @return Response
+     * @return Calculator
      */
-    public function actionLogout()
+    private function buildCalculator()
     {
-        Yii::$app->user->logout();
+        $calculator = new Calculator();
+        $calculator->setButton(new OperandButton($calculator, '1', '1'));
+        $calculator->setButton(new OperandButton($calculator, '2', '2'));
+        $calculator->setButton(new OperandButton($calculator, '3', '3'));
+        $calculator->setButton(new OperandButton($calculator, '4', '4'));
+        $calculator->setButton(new OperandButton($calculator, '5', '5'));
+        $calculator->setButton(new OperandButton($calculator, '6', '6'));
+        $calculator->setButton(new OperandButton($calculator, '7', '7'));
+        $calculator->setButton(new OperandButton($calculator, '8', '8'));
+        $calculator->setButton(new OperandButton($calculator, '9', '9'));
+        $calculator->setButton(new OperandButton($calculator, '0', '0'));
+        $calculator->setButton(new OperandButton($calculator, '.', '.'));
+        $calculator->setButton(new OperandButton($calculator, '(', '('));
+        $calculator->setButton(new OperandButton($calculator, ')', ')'));
+        $calculator->setButton(new OperandButton($calculator, '/', '/'));
+        $calculator->setButton(new OperandButton($calculator, '*', '*'));
+        $calculator->setButton(new OperandButton($calculator, '-', '-'));
+        $calculator->setButton(new OperandButton($calculator, '+', '+'));
 
-        return $this->goHome();
-    }
+        $calculator->setButton(new ClearButton($calculator, 'C'));
+        $calculator->setButton(new CalculateButton($calculator, '='));
 
-    /**
-     * Displays contact page.
-     *
-     * @return Response|string
-     */
-    public function actionContact()
-    {
-        $model = new ContactForm();
-        if ($model->load(Yii::$app->request->post()) && $model->contact(Yii::$app->params['adminEmail'])) {
-            Yii::$app->session->setFlash('contactFormSubmitted');
+        $calculator->setHistory(new History($calculator));
 
-            return $this->refresh();
-        }
-        return $this->render('contact', [
-            'model' => $model,
-        ]);
-    }
-
-    /**
-     * Displays about page.
-     *
-     * @return string
-     */
-    public function actionAbout()
-    {
-        return $this->render('about');
+        return $calculator;
     }
 }
